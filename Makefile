@@ -11,7 +11,7 @@ map_gamepad_SDL2: map_gamepad_SDL2.cpp
 	gcc -g -o map_gamepad_SDL2 map_gamepad_SDL2.cpp -lSDL2
 
 gamepad_info: gamepad_info.cpp
-	gcc -g -o gamepad_info gamepad_info.cpp -lSDL2
+	gcc -g -o gamepad_info gamepad_info.cpp -lSDL2 -ludev
 
 clean:
 	rm -f test_gamepad_SDL2
