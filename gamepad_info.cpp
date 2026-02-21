@@ -1,9 +1,9 @@
 /* gamepad_info, display gamepad SDLGamecontrollerDB mappings and information
  * used in EmuELEC, original taken from:
- * 
+ *
  * Test gamepad axis/buttons with SDL2
  * Also tests new SDL2 features: game controller, joystick/gamepad, hotplug and haptics/rumble.
- * 
+ *
  * (c) Wintermute0110 <wintermute0110@gmail.com> December 2014
  */
 #include <SDL2/SDL.h>
@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <libudev.h>
 
 SDL_Joystick *joy = NULL;
 SDL_GameController *gamepad = NULL;
@@ -19,6 +20,54 @@ int SDL_joystick_has_hat = 0;
 SDL_JoystickID instanceID = -1;
 int device_index_in_use = -1;
 int SDL_joystick_is_gamepad = 0;
+
+/**
+ * Enumerates joysticks and returns an array of JoystickInfo structs.
+ * @param count Pointer to an integer to store the number of joysticks found.
+ * @return A dynamically allocated array of JoystickInfo structs.
+ */
+int* get_joystick_list(int *count) {
+    struct udev *udev = udev_new();
+    struct udev_enumerate *enumerate = udev_enumerate_new(udev);
+
+    // Match only the "joystick" device nodes (jsX)
+    udev_enumerate_add_match_subsystem(enumerate, "input");
+    udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
+    udev_enumerate_scan_devices(enumerate);
+
+    struct udev_list_entry *devices = udev_enumerate_get_list_entry(enumerate);
+    struct udev_list_entry *entry;
+
+    int n = 0;
+    udev_list_entry_foreach(entry, devices) { n++; }
+
+    if (n == 0) {
+        *count = 0;
+        udev_enumerate_unref(enumerate);
+        udev_unref(udev);
+        return NULL;
+    }
+
+    int *list = (int*)malloc(sizeof(int) * n);
+    int i = 0;
+
+    udev_list_entry_foreach(entry, devices) {
+        const char *path = udev_list_entry_get_name(entry);
+        struct udev_device *dev = udev_device_new_from_syspath(udev, path);
+        const char *sysname = udev_device_get_sysname(dev); // e.g., "js0" or "eventX"
+
+        // Only process the legacy 'js' nodes to easily extract the index
+        if (strncmp(sysname, "js", 2) == 0) {
+            list[i++] = atoi(sysname + 2);
+        }
+        udev_device_unref(dev);
+    }
+
+    *count = i;
+    udev_enumerate_unref(enumerate);
+    udev_unref(udev);
+    return list;
+}
 
 // Read UDEV name from /sys/class/input/jsX/device/name
 static void get_udev_name(int index, char *buf, size_t bufsize) {
@@ -67,9 +116,13 @@ int main(int argn, char **argv)
         return 0;
     }
 
+    int joystick_count = 0;
+    int *joystick_indexes = get_joystick_list(&joystick_count);
+
     for (int i = 0; i < numJoysticks; i++) {
         char udev_name[128];
-        get_udev_name(i, udev_name, sizeof(udev_name));
+        if (i < joystick_count)
+          get_udev_name(joystick_indexes[i], udev_name, sizeof(udev_name));
 
         // Try to open as gamepad first
         gamepad = SDL_GameControllerOpen(i);
@@ -101,6 +154,7 @@ int main(int argn, char **argv)
                 printf("Balls:           %d\n", SDL_JoystickNumBalls(joy));
 */
                 printf("Instance ID:     %d\n", instanceID);
+                printf("jsindex:         %d\n", joystick_indexes[i]);
             } else {
                 printf("%s%%%s\n", SDL_JoystickName(joy), guid);
             }
@@ -129,6 +183,7 @@ int main(int argn, char **argv)
                 printf("Hats:            %d\n", SDL_JoystickNumHats(joy));
 */
                 printf("Instance ID:     %d\n", instanceID);
+                printf("jsindex:         %d\n", joystick_indexes[i]);
             } else {
                 printf("%s\n", mapping ? mapping : "(no mapping)");
             }
@@ -136,7 +191,10 @@ int main(int argn, char **argv)
             SDL_GameControllerClose(gamepad);
             gamepad = NULL;
         }
+
     }
+
+    free(joystick_indexes);
 
     SDL_QuitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC);
     SDL_Quit();
