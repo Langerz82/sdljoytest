@@ -21,6 +21,11 @@ SDL_JoystickID instanceID = -1;
 int device_index_in_use = -1;
 int SDL_joystick_is_gamepad = 0;
 
+// Comparison function for ascending order
+int compare(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
 /**
  * Enumerates joysticks and returns an array of JoystickInfo structs.
  * @param count Pointer to an integer to store the number of joysticks found.
@@ -66,6 +71,9 @@ int* get_joystick_list(int *count) {
     *count = i;
     udev_enumerate_unref(enumerate);
     udev_unref(udev);
+
+    qsort(list, i, sizeof(int), compare);
+
     return list;
 }
 
