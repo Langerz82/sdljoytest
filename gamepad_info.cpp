@@ -151,7 +151,7 @@ int main(int argn, char **argv)
             SDL_joystick_has_hat = num_hats > 0;
 
             if (moreinfo) {
-                printf("\nJoystick js%d \n", i);
+                printf("\nJoystick %d \n", i);
                 printf("UDEV name:       %s\n", udev_name);
                 printf("SDL name:        %s\n", SDL_JoystickName(joy));
                 printf("SDL GUID:        %s\n", guid);
@@ -181,7 +181,7 @@ int main(int argn, char **argv)
             const char *mapping = SDL_GameControllerMapping(gamepad);
 
             if (moreinfo) {
-                printf("\nGamepad js%d\n", i);
+                printf("\nGamepad %d\n", i);
                 printf("UDEV name:       %s\n", udev_name);
                 printf("SDL name:        %s\n", SDL_GameControllerName(gamepad));
                 printf("SDL GUID:        %s\n", guid);
