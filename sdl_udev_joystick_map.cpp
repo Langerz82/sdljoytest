@@ -11,7 +11,7 @@ namespace fs = std::filesystem;
 int DEBUG = 1;
 
 struct udev_enumerate *enumerate = NULL;
-struct udev *udev = NULL;
+struct udev *udev_joypad_fd = NULL;
 struct udev_monitor *udev_joypad_mon    = NULL;
 
 // Function to find udev index from SDL joystick index
@@ -30,17 +30,17 @@ int find_udev_index_from_sdl(int sdl_index) {
 
     if (DEBUG) printf("sdl_syspath %s\n", sdl_syspath);
 
-    if (!(udev = udev_new()))
+    if (!(udev_joypad_fd = udev_new()))
        return -1;
 
-    if ((udev_joypad_mon = udev_monitor_new_from_netlink(udev, "udev")))
+    if ((udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev")))
     {
        udev_monitor_filter_add_match_subsystem_devtype(
              udev_joypad_mon, "input", NULL);
        udev_monitor_enable_receiving(udev_joypad_mon);
     }
 
-    if (!(enumerate = udev_enumerate_new(udev)))
+    if (!(enumerate = udev_enumerate_new(udev_joypad_fd)))
        goto error;
 
     // 2. Iterate udev devices
@@ -58,7 +58,7 @@ int find_udev_index_from_sdl(int sdl_index) {
     std::regex event_pattern(R"(^/dev/input/event[0-9]+$)");
     udev_list_entry_foreach(entry, devices) {
         const char *path = udev_list_entry_get_name(entry);
-        struct udev_device *dev = udev_device_new_from_syspath(udev, path);
+        struct udev_device *dev = udev_device_new_from_syspath(udev_joypad_fd, path);
 
         // Match /sys path
         const char *devnode = udev_device_get_devnode(dev);
@@ -79,7 +79,7 @@ int find_udev_index_from_sdl(int sdl_index) {
     }
 
     udev_enumerate_unref(enumerate);
-    udev_unref(udev);
+    udev_unref(udev_joypad_fd);
     SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
     return found_index;
 
