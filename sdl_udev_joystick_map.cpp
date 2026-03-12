@@ -33,13 +33,14 @@ int find_udev_index_from_syspath(const char* sdl_syspath) {
 
     if ((udev_joypad_mon = udev_monitor_new_from_netlink(udev_joypad_fd, "udev")))
     {
-       udev_monitor_filter_add_match_subsystem_devtype(
-             udev_joypad_mon, "input", NULL);
-       udev_monitor_enable_receiving(udev_joypad_mon);
+        udev_monitor_filter_add_match_subsystem_devtype(udev_joypad_mon, "input", NULL);
+        udev_monitor_enable_receiving(udev_joypad_mon);
     }
 
-    if (!(enumerate = udev_enumerate_new(udev_joypad_fd)))
-       goto error;
+    if (!(enumerate = udev_enumerate_new(udev_joypad_fd))) {
+        udev_joypad_destroy();
+        return -1;
+    }
 
     // 2. Iterate udev devices
 //    struct udev *udev = udev_new();
@@ -79,10 +80,6 @@ int find_udev_index_from_syspath(const char* sdl_syspath) {
     udev_enumerate_unref(enumerate);
     udev_unref(udev_joypad_fd);
     return found_index;
-
-error:
-    udev_joypad_destroy();
-    return -1;
 }
 
 // Function to find udev index from SDL joystick index
