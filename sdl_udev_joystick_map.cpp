@@ -88,6 +88,18 @@ error:
     return -1;
 }
 
+void udev_joypad_destroy(void)
+{
+   if (udev_joypad_mon)
+      udev_monitor_unref(udev_joypad_mon);
+
+   if (udev_joypad_fd)
+      udev_unref(udev_joypad_fd);
+
+   udev_joypad_mon = NULL;
+   udev_joypad_fd  = NULL;
+}
+
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: %s <SDL_Joystick_Index>\n", argv[0]);
