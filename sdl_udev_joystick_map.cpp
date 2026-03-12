@@ -28,6 +28,7 @@ int find_udev_index_from_sdl(int sdl_index) {
 
     struct udev_enumerate *enumerate = NULL;
     struct udev *udev = NULL;
+    struct udev_monitor *udev_joypad_mon    = NULL;
 
     if (!(udev = udev_new()))
        return -1;
