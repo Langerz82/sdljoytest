@@ -10,6 +10,10 @@ namespace fs = std::filesystem;
 
 int DEBUG = 1;
 
+struct udev_enumerate *enumerate = NULL;
+struct udev *udev = NULL;
+struct udev_monitor *udev_joypad_mon    = NULL;
+
 // Function to find udev index from SDL joystick index
 int find_udev_index_from_sdl(int sdl_index) {
     if (SDL_Init(SDL_INIT_JOYSTICK) < 0) return -1;
@@ -25,10 +29,6 @@ int find_udev_index_from_sdl(int sdl_index) {
     if (!sdl_syspath) return -1;
 
     if (DEBUG) printf("sdl_syspath %s\n", sdl_syspath);
-
-    struct udev_enumerate *enumerate = NULL;
-    struct udev *udev = NULL;
-    struct udev_monitor *udev_joypad_mon    = NULL;
 
     if (!(udev = udev_new()))
        return -1;
