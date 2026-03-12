@@ -43,17 +43,13 @@ int find_udev_index_from_syspath(const char* sdl_syspath) {
     }
 
     // 2. Iterate udev devices
-//    struct udev *udev = udev_new();
-    //struct udev_enumerate *enumerate = udev_enumerate_new(udev);
     udev_enumerate_add_match_property(enumerate, "ID_INPUT_JOYSTICK", "1");
     udev_enumerate_add_match_subsystem(enumerate, "input");
     udev_enumerate_scan_devices(enumerate);
     struct udev_list_entry *devices = udev_enumerate_get_list_entry(enumerate);
     struct udev_list_entry *entry;
 
-    int udev_index = 0;
-    int found_index = -1;
-
+    std::vector<std::string> devnodes = {};
     std::regex event_pattern(R"(^/dev/input/event[0-9]+$)");
     udev_list_entry_foreach(entry, devices) {
         const char *path = udev_list_entry_get_name(entry);
@@ -66,19 +62,28 @@ int find_udev_index_from_syspath(const char* sdl_syspath) {
 
             if (std::regex_match(devnode, event_pattern))
             {
-                if (strcmp(devnode, sdl_syspath) == 0) {
-                    found_index = udev_index;
-                    udev_device_unref(dev);
-                    break;
-                }
-                udev_index++;
+                std::string devnode_str(devnode);
+                devnodes.push_back(devnode_str);
             }
         }
         udev_device_unref(dev);
     }
-
     udev_enumerate_unref(enumerate);
     udev_unref(udev_joypad_fd);
+
+    std::sort(devnodes.begin(), devnodes.end());
+
+    int udev_index = 0;
+    int found_index = -1;
+
+    for (const auto& s : devnodes) {
+        if (strcmp(s.c_str(), sdl_syspath) == 0) {
+            found_index = udev_index;
+            break;
+        }        
+        udev_index++;
+    }
+
     return found_index;
 }
 
