@@ -8,7 +8,7 @@
 
 namespace fs = std::filesystem;
 
-int DEBUG = 1;
+int DEBUG = 0;
 
 struct udev_enumerate *enumerate = NULL;
 struct udev *udev_joypad_fd = NULL;
