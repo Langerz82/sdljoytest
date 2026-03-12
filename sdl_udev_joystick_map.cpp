@@ -14,21 +14,19 @@ struct udev_enumerate *enumerate = NULL;
 struct udev *udev_joypad_fd = NULL;
 struct udev_monitor *udev_joypad_mon    = NULL;
 
-// Function to find udev index from SDL joystick index
-int find_udev_index_from_sdl(int sdl_index) {
-    if (SDL_Init(SDL_INIT_JOYSTICK) < 0) return -1;
+void udev_joypad_destroy(void)
+{
+   if (udev_joypad_mon)
+      udev_monitor_unref(udev_joypad_mon);
 
-    if (sdl_index < 0 || sdl_index >= SDL_NumJoysticks()) {
-        fprintf(stderr, "Invalid SDL Joystick Index\n");
-        return -1;
-    }
-    if (DEBUG) printf("SDL_NumJoysticks %d\n", SDL_NumJoysticks());
+   if (udev_joypad_fd)
+      udev_unref(udev_joypad_fd);
 
-    // 1. Get Syspath from SDL
-    const char *sdl_syspath = SDL_JoystickPathForIndex(sdl_index);
-    if (!sdl_syspath) return -1;
+   udev_joypad_mon = NULL;
+   udev_joypad_fd  = NULL;
+}
 
-    if (DEBUG) printf("sdl_syspath %s\n", sdl_syspath);
+int find_udev_index_from_syspath(const char* sdl_syspath) {
 
     if (!(udev_joypad_fd = udev_new()))
        return -1;
@@ -80,7 +78,6 @@ int find_udev_index_from_sdl(int sdl_index) {
 
     udev_enumerate_unref(enumerate);
     udev_unref(udev_joypad_fd);
-    SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
     return found_index;
 
 error:
@@ -88,16 +85,27 @@ error:
     return -1;
 }
 
-void udev_joypad_destroy(void)
-{
-   if (udev_joypad_mon)
-      udev_monitor_unref(udev_joypad_mon);
+// Function to find udev index from SDL joystick index
+int find_udev_index_from_sdl(int sdl_index) {
+    if (SDL_Init(SDL_INIT_JOYSTICK) < 0) return -1;
 
-   if (udev_joypad_fd)
-      udev_unref(udev_joypad_fd);
+    if (sdl_index < 0 || sdl_index >= SDL_NumJoysticks()) {
+        fprintf(stderr, "Invalid SDL Joystick Index\n");
+        return -1;
+    }
+    if (DEBUG) printf("SDL_NumJoysticks %d\n", SDL_NumJoysticks());
 
-   udev_joypad_mon = NULL;
-   udev_joypad_fd  = NULL;
+    // 1. Get Syspath from SDL
+    const char *sdl_syspath = SDL_JoystickPathForIndex(sdl_index);
+    if (!sdl_syspath) return -1;
+
+    if (DEBUG) printf("sdl_syspath %s\n", sdl_syspath);
+
+    int index = find_udev_index_from_syspath(sdl_syspath);
+
+    SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+
+    return index;
 }
 
 int main(int argc, char *argv[]) {
