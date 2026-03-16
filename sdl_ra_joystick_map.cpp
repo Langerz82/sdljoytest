@@ -52,7 +52,12 @@ int find_index_from_sdl(int sdl_index) {
 
     SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 
-    return sdlpaths[sdl_index].second;
+    for(int i=0; i < count; ++i) {
+        if (sdlpaths[i].second == sdl_index)
+            return i;
+    }
+    return -1;
+    //return sdlpaths[sdl_index].second;
 }
 
 int main(int argc, char *argv[]) {
