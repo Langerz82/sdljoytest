@@ -46,7 +46,6 @@ std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
         return list;
     }
 
-    int *list = (int*)malloc(sizeof(int) * n);
     int i = 0;
 
     udev_list_entry_foreach(entry, devices) {
