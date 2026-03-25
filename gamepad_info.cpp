@@ -53,11 +53,12 @@ std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
         struct udev_device *dev = udev_device_new_from_syspath(udev, path);
         const char *sysname = udev_device_get_sysname(dev); // e.g., "js0" or "eventX"
 
+        const char *name = udev_device_get_sysattr_value(dev, "name");
+        printf("name: %s\n", name);
+
         // Only process the legacy 'js' nodes to easily extract the index
         if (strncmp(sysname, "js", 2) == 0) {
             int index = atoi(sysname + 2);
-            const char *name = udev_device_get_sysattr_value(dev, "name");
-            printf("name: %s\n", name);
             list.push_back(std::make_pair(index, name));
         }
         udev_device_unref(dev);
