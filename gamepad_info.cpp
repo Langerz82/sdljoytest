@@ -54,7 +54,8 @@ std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
         const char *sysname = udev_device_get_sysname(dev); // e.g., "js0" or "eventX"
         printf("sysname: %s\n", sysname);
 
-        const char *name = udev_device_get_sysattr_value(dev, "name");
+        //const char *name = udev_device_get_sysattr_value(dev, "name");
+        const char *name = udev_device_get_property_value(dev, "ID_MODEL");
         printf("name: %s\n", name);
 
         // Only process the legacy 'js' nodes to easily extract the index
