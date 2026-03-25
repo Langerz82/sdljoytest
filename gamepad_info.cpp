@@ -23,16 +23,6 @@ SDL_JoystickID instanceID = -1;
 int device_index_in_use = -1;
 int SDL_joystick_is_gamepad = 0;
 
-// Comparison function for ascending order
-int compare(const void *a, const void *b) {
-    return (*(int*)a - *(int*)b);
-}
-
-/**
- * Enumerates joysticks and returns an array of JoystickInfo structs.
- * @param count Pointer to an integer to store the number of joysticks found.
- * @return A dynamically allocated array of JoystickInfo structs.
- */
 std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
     std::vector<std::pair<int,const char*>> list;
     struct udev *udev = udev_new();
@@ -117,6 +107,10 @@ int main(int argn, char **argv)
     for (int i = 0; i < numJoysticks; i++) {
         // Try to open as gamepad first
         gamepad = SDL_GameControllerOpen(i);
+
+        int udev_index = (i < udev_list.size()) ? udev_list[i].first : -1;
+        const char* udev_name = (i < udev_list.size()) ? udev_list[i].second : "";
+
         if (gamepad == NULL) {
             SDL_joystick_is_gamepad = 0;
             joy = SDL_JoystickOpen(i);
@@ -132,9 +126,6 @@ int main(int argn, char **argv)
             SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(joy), guid, sizeof(guid));
             int num_hats = SDL_JoystickNumHats(joy);
             SDL_joystick_has_hat = num_hats > 0;
-
-            int udev_index = (i < udev_list.size()) ? udev_list[i].first : -1;
-            const char* udev_name = (i < udev_list.size()) ? udev_list[i].second : "";
 
             if (moreinfo) {
                 printf("\nJoystick %d \n", i);
@@ -177,7 +168,7 @@ int main(int argn, char **argv)
                 printf("Hats:            %d\n", SDL_JoystickNumHats(joy));
 */
                 printf("Instance ID:     %d\n", instanceID);
-                printf("jsindex:         %d\n", joystick_indexes[i]);
+                printf("jsindex:         %d\n", udev_index);
             } else {
                 printf("%s\n", mapping ? mapping : "(no mapping)");
             }
@@ -187,8 +178,6 @@ int main(int argn, char **argv)
         }
 
     }
-
-    free(joystick_indexes);
 
     SDL_QuitSubSystem(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC);
     SDL_Quit();
