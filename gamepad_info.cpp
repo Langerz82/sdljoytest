@@ -12,6 +12,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <libudev.h>
+#include <vector>
+#include <algorithm>
 
 SDL_Joystick *joy = NULL;
 SDL_GameController *gamepad = NULL;
@@ -31,7 +33,8 @@ int compare(const void *a, const void *b) {
  * @param count Pointer to an integer to store the number of joysticks found.
  * @return A dynamically allocated array of JoystickInfo structs.
  */
-int* get_joystick_list(int *count) {
+std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
+    std::vector<std::pair<int,const char*>> list;
     struct udev *udev = udev_new();
     struct udev_enumerate *enumerate = udev_enumerate_new(udev);
 
@@ -50,7 +53,7 @@ int* get_joystick_list(int *count) {
         *count = 0;
         udev_enumerate_unref(enumerate);
         udev_unref(udev);
-        return NULL;
+        return list;
     }
 
     int *list = (int*)malloc(sizeof(int) * n);
@@ -63,7 +66,9 @@ int* get_joystick_list(int *count) {
 
         // Only process the legacy 'js' nodes to easily extract the index
         if (strncmp(sysname, "js", 2) == 0) {
-            list[i++] = atoi(sysname + 2);
+            int index = atoi(sysname + 2);
+            const char *name = udev_device_get_sysattr_value(dev, "name");
+            list.push_back(std::make_pair(index, name));
         }
         udev_device_unref(dev);
     }
@@ -72,27 +77,9 @@ int* get_joystick_list(int *count) {
     udev_enumerate_unref(enumerate);
     udev_unref(udev);
 
-    qsort(list, i, sizeof(int), compare);
+    std::sort(list.begin(), list.end());
 
     return list;
-}
-
-// Read UDEV name from /sys/class/input/jsX/device/name
-static void get_udev_name(int index, char *buf, size_t bufsize) {
-    char path[128];
-    snprintf(path, sizeof(path), "/sys/class/input/js%d/device/name", index);
-    FILE *f = fopen(path, "r");
-    if (!f) {
-        snprintf(buf, bufsize, "(unavailable)");
-        return;
-    }
-    if (!fgets(buf, bufsize, f)) {
-        snprintf(buf, bufsize, "(unknown)");
-        fclose(f);
-        return;
-    }
-    buf[strcspn(buf, "\n")] = '\0';
-    fclose(f);
 }
 
 int main(int argn, char **argv)
@@ -125,13 +112,9 @@ int main(int argn, char **argv)
     }
 
     int joystick_count = 0;
-    int *joystick_indexes = get_joystick_list(&joystick_count);
+    std::vector<std::pair<int,const char*>> udev_list = get_joystick_list(&joystick_count);
 
     for (int i = 0; i < numJoysticks; i++) {
-        char udev_name[128];
-        if (i < joystick_count)
-          get_udev_name(joystick_indexes[i], udev_name, sizeof(udev_name));
-
         // Try to open as gamepad first
         gamepad = SDL_GameControllerOpen(i);
         if (gamepad == NULL) {
@@ -150,6 +133,9 @@ int main(int argn, char **argv)
             int num_hats = SDL_JoystickNumHats(joy);
             SDL_joystick_has_hat = num_hats > 0;
 
+            int udev_index = (i < udev_list.size()) ? udev_list[i].first : -1;
+            const char* udev_name = (i < udev_list.size()) ? udev_list[i].second : "";
+
             if (moreinfo) {
                 printf("\nJoystick %d \n", i);
                 printf("UDEV name:       %s\n", udev_name);
@@ -162,7 +148,7 @@ int main(int argn, char **argv)
                 printf("Balls:           %d\n", SDL_JoystickNumBalls(joy));
 */
                 printf("Instance ID:     %d\n", instanceID);
-                printf("jsindex:         %d\n", joystick_indexes[i]);
+                printf("jsindex:         %d\n", udev_index);
             } else {
                 printf("%s%%%s\n", SDL_JoystickName(joy), guid);
             }
