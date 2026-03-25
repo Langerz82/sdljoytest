@@ -52,6 +52,7 @@ std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
         const char *path = udev_list_entry_get_name(entry);
         struct udev_device *dev = udev_device_new_from_syspath(udev, path);
         const char *sysname = udev_device_get_sysname(dev); // e.g., "js0" or "eventX"
+        printf("sysname: %s\n", sysname);
 
         const char *name = udev_device_get_sysattr_value(dev, "name");
         printf("name: %s\n", name);
