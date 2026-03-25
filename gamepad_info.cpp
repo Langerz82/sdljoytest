@@ -57,6 +57,7 @@ std::vector<std::pair<int,const char*>> get_joystick_list(int *count) {
         if (strncmp(sysname, "js", 2) == 0) {
             int index = atoi(sysname + 2);
             const char *name = udev_device_get_sysattr_value(dev, "name");
+            printf("name: %s\n", name);
             list.push_back(std::make_pair(index, name));
         }
         udev_device_unref(dev);
